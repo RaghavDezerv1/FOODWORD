@@ -1,0 +1,142 @@
+// 1) Our list of 5-letter words + their clues
+const wordList = [
+  {
+    word: "THALI",
+    clue: "Indian police might love feeding you this"
+  },
+  {
+    word: "RASAM",
+    clue: "They say the Red Planet can be quite tangy"
+  },
+  {
+    word: "CHAAT",
+    clue: "You might overhear endless conversations in bustling markets"
+  },
+  {
+    word: "TIKKA",
+    clue: "A ticket to a flavor carnival, where many groups get invited"
+  },
+  {
+    word: "BHAJI",
+    clue: 'Flip your “hijab” and buy bread'
+  },
+  {
+    word: "HALWA",
+    clue: "AH! LAWYERs have a sweet tongue, especially in the beginning."
+  },
+  {
+    word: "POORI",
+    clue: "I like the shape of you, it’s very mastana!"
+  },
+  {
+    word: "KHEER",
+    clue: "Kiran hates eating eggs with Radhika."
+  },
+  {
+    word: "SATTU",
+    clue: "Saturn has the perfect body building solution for you"
+  },
+  {
+    word: "BARFI",
+    clue: "Even Ranbir Kapoor approves your sweet truth"
+  }
+];
+
+// 2) Determine today's puzzle
+// A simple approach: pick the word by today's date mod the length of the list
+// You can change this logic if you want.
+const today = new Date();
+const index = today.getDate() % wordList.length; 
+const dailyWordObj = wordList[index];
+
+const secretWord = dailyWordObj.word; // e.g., "THALI"
+const dailyClue = dailyWordObj.clue;  // e.g., "Indian police might love feeding you this"
+const clueTextElem = document.getElementById("clue-text");
+clueTextElem.textContent = dailyClue;
+
+// 3) Game state variables
+let currentGuessIndex = 0; // which row (0-5)
+let gameOver = false;
+
+// 4) Grab references from HTML
+const guessInput = document.getElementById("guessInput");
+const guessButton = document.getElementById("guessButton");
+const messageElem = document.getElementById("message");
+
+// 5) Add event listener for the "Guess" button
+guessButton.addEventListener("click", submitGuess);
+
+// (Optional) Allow pressing "Enter" key in the input field
+guessInput.addEventListener("keyup", (event) => {
+  if (event.key === "Enter") {
+    submitGuess();
+  }
+});
+
+function submitGuess() {
+  if (gameOver) return;
+
+  // 1. Get user guess, force uppercase
+  let guess = guessInput.value.toUpperCase().trim();
+  if (guess.length !== 5) {
+    alert("Please enter a 5-letter word.");
+    return;
+  }
+
+  // 2. Update the board
+  updateBoard(guess, currentGuessIndex);
+
+  // 3. Check if correct
+  if (guess === secretWord) {
+    messageElem.textContent = "Correct! You got it!";
+    gameOver = true;
+  } else {
+    currentGuessIndex++;
+    if (currentGuessIndex > 5) {
+      // Out of guesses
+      messageElem.textContent = `Out of guesses! The word was: ${secretWord}`;
+      gameOver = true;
+    }
+  }
+
+  // Clear input for next guess
+  guessInput.value = "";
+}
+
+function updateBoard(guess, rowIndex) {
+  // For color logic, we need to track letter frequencies in the secret word
+  const letterCount = {};
+  for (let char of secretWord) {
+    letterCount[char] = (letterCount[char] || 0) + 1;
+  }
+
+  // First pass: exact matches (Green)
+  const result = Array(5).fill(null);
+  for (let i = 0; i < 5; i++) {
+    const cellId = `cell-${rowIndex}-${i}`;
+    const cell = document.getElementById(cellId);
+    cell.textContent = guess[i];
+    cell.className = "cell"; // reset
+
+    if (guess[i] === secretWord[i]) {
+      cell.classList.add("correct");
+      letterCount[guess[i]]--;
+      result[i] = "correct";
+    }
+  }
+
+  // Second pass: present (Yellow) vs absent (Gray)
+  for (let i = 0; i < 5; i++) {
+    if (result[i] === null) {
+      const cellId = `cell-${rowIndex}-${i}`;
+      const cell = document.getElementById(cellId);
+
+      if (secretWord.includes(guess[i]) && letterCount[guess[i]] > 0) {
+        cell.classList.add("present");
+        letterCount[guess[i]]--;
+      } else {
+        cell.classList.add("absent");
+      }
+    }
+  }
+}
